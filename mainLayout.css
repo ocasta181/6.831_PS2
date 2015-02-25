@@ -12,4 +12,13 @@
 
 #content{
 	background-color:gray;
+	padding: 0px 0px;
+}
+
+#checker_board{
+	table-layout: fixed;
+	height: 400px;
+	width: 400px;
+	padding: 0px 0px;
+	border-spacing: 1px;
 }

@@ -30,7 +30,7 @@ var Board = function(size) {
     // square[row][col] is the Checker in that square, or null if square is empty
     this.square = new Array(this.boardSize);
     // make an empty checkerboard
-    for (var i=0; i<=this.boardSize; i++){
+    for (var i=0; i<this.boardSize; i++){ // changed <= to < for fencepost `akf
 		this.square[i] = [];
 	}
     

@@ -51,11 +51,59 @@
             board = new Board(DEFAULT_BOARD_SIZE);
         }
 
+        rules = new Rules(board);
+        
 
-	rules = new Rules(board);
+        //Initialize the board
+        var square_size = Math.floor((400 - (board.boardSize * 2)) / board.boardSize);
+        var red_peice = "<img src='graphics/red-piece.png' style='width:"+square_size+"px; height:"+square_size+"px'>";
+        var black_peice = "<img src='graphics/black-piece.png' style='width:"+square_size+"px; height:"+square_size+"px'>";
+        
+
+        for (row in board.square){
+            $("#checker_board").append("<tr id='row_" + row + "'></tr>");
+            for (col in board.square){
+
+                // the id of this board space
+                var square = "square_" + row + "_" + col;
+
+                // add board spaces
+                $("#row_" + row).append("<td id='"+ square + "'></td>");
+
+                // alternate checkerboard square colors
+                if((parseInt(col)+parseInt(row))%2 == 0){
+                    $("#" + square).css("background-color", "white");
+
+                } else {
+                    $("#" + square).css("background-color", "grey");
+                }
+
+                // size the board
+                $("#" + square).css("width", square_size + "px");
+                $("#" + square).css("height", square_size + "px");
+                $("#" + square).css("padding", "0px 0px");
+                $("#" + square).css("border-spacing", "0px 0px");
+
+                // add peices to the board
+                if(parseInt(row) == 0 && parseInt(col)%2 == 1){
+                    $("#" + square).append(red_peice)
+
+                }else if(parseInt(row) == 1 && parseInt(col)%2 == 0){
+                    $("#" + square).append(red_peice)
+
+                } else if(parseInt(row) == board.boardSize-2 && parseInt(col)%2 == 1){
+                    $("#" + square).append(black_peice)
+
+                } else if(parseInt(row) == board.boardSize-1 && parseInt(col)%2 == 0){
+                    $("#" + square).append(black_peice)
+
+                }
 
 
-     	// Your code here
+
+            }; 
+        };
+     	
 
         board.addEventListener('add',function (e) {
     		// Your code here
