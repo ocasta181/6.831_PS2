@@ -39,6 +39,44 @@
 	// Your code here
     }
 
+    var initializeBoard = function(board) {
+                //Initialize the board
+        var square_size = 400 / board.boardSize;
+        var c = document.getElementById("checker_board");
+        var ctx=c.getContext("2d");
+        ctx.fillStyle="grey";
+
+        for(var row = 0; row < board.boardSize; row++){
+            for (var col = 0; col < board.boardSize; col++){
+                if((parseInt(row)+parseInt(col)) % 2 != 0){
+                    ctx.fillRect(col * square_size, row * square_size, square_size, square_size);               
+                };
+            };
+        };
+    };
+
+    var refreshPeices = function(board){
+        console.log("this was called");
+        var square_size = 400 / board.boardSize;
+        var checkers = board.getAllCheckers();
+        red_checker = new Image();
+        black_checker = new Image();
+        red_checker.src = 'graphics/red-piece.png';
+        black_checker.src = 'graphics/black-piece.png'
+        var c = document.getElementById("checker_board");
+        var ctx=c.getContext("2d");
+        for (var i = 0; i < checkers.length; i++){
+            var checker = checkers[i];
+            var x = checker.col*square_size;
+            var y = checker.row*square_size;
+            if(checker.color == "red"){
+                ctx.drawImage(red_checker, x, y, square_size, square_size);
+            } else {
+                ctx.drawImage(black_checker, x, y, square_size, square_size);
+            };
+        };
+    };
+
 
 
     // This allows the Javascript code inside this block to only run when the page
@@ -52,57 +90,12 @@
         }
 
         rules = new Rules(board);
+
+        initializeBoard(board);
         
 
-        //Initialize the board
-        var square_size = Math.floor((400 - (board.boardSize * 2)) / board.boardSize);
-        var red_peice = "<img src='graphics/red-piece.png' style='width:"+square_size+"px; height:"+square_size+"px'>";
-        var black_peice = "<img src='graphics/black-piece.png' style='width:"+square_size+"px; height:"+square_size+"px'>";
-        
 
-        for (row in board.square){
-            $("#checker_board").append("<tr id='row_" + row + "'></tr>");
-            for (col in board.square){
-
-                // the id of this board space
-                var square = "square_" + row + "_" + col;
-
-                // add board spaces
-                $("#row_" + row).append("<td id='"+ square + "'></td>");
-
-                // alternate checkerboard square colors
-                if((parseInt(col)+parseInt(row))%2 == 0){
-                    $("#" + square).css("background-color", "white");
-
-                } else {
-                    $("#" + square).css("background-color", "grey");
-                }
-
-                // size the board
-                $("#" + square).css("width", square_size + "px");
-                $("#" + square).css("height", square_size + "px");
-                $("#" + square).css("padding", "0px 0px");
-                $("#" + square).css("border-spacing", "0px 0px");
-
-                // add peices to the board
-                if(parseInt(row) == 0 && parseInt(col)%2 == 1){
-                    $("#" + square).append(red_peice)
-
-                }else if(parseInt(row) == 1 && parseInt(col)%2 == 0){
-                    $("#" + square).append(red_peice)
-
-                } else if(parseInt(row) == board.boardSize-2 && parseInt(col)%2 == 1){
-                    $("#" + square).append(black_peice)
-
-                } else if(parseInt(row) == board.boardSize-1 && parseInt(col)%2 == 0){
-                    $("#" + square).append(black_peice)
-
-                }
-
-
-
-            }; 
-        };
+  
      	
 
         board.addEventListener('add',function (e) {
@@ -124,6 +117,7 @@
         
         $("#btnNewGame").click(function(evt) {
             board.prepareNewGame();
+            refreshPeices(board);
         });
 
         $("#btnAutoMove").click(function(evt) {
