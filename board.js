@@ -418,6 +418,7 @@ var Board = function(size) {
 			this.add(chkRed, (1 - i%2), i);
 			this.add(chkBlack , (this.boardSize - 1 - i%2), i);
 		}
+    return true; // added by akf
 	}
 	
 	/**

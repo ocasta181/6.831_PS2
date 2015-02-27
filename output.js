@@ -41,7 +41,7 @@
 
     var initializeBoard = function(board) {
                 //Initialize the board
-        var square_size = 400 / board.boardSize;
+        square_size = 400 / board.boardSize;    // declared in global scope
         var c = document.getElementById("checker_board");
         var ctx=c.getContext("2d");
         ctx.fillStyle="grey";
@@ -53,16 +53,14 @@
                 };
             };
         };
-    };
-
-    var refreshPeices = function(board){
-        console.log("this was called");
-        var square_size = 400 / board.boardSize;
-        var checkers = board.getAllCheckers();
         red_checker = new Image();
         black_checker = new Image();
         red_checker.src = 'graphics/red-piece.png';
-        black_checker.src = 'graphics/black-piece.png'
+        black_checker.src = 'graphics/black-piece.png';
+    };
+
+    var refreshPeices = function(board){
+        var checkers = board.getAllCheckers();
         var c = document.getElementById("checker_board");
         var ctx=c.getContext("2d");
         for (var i = 0; i < checkers.length; i++){
@@ -116,6 +114,7 @@
 
         
         $("#btnNewGame").click(function(evt) {
+
             board.prepareNewGame();
             refreshPeices(board);
         });
