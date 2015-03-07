@@ -7,7 +7,7 @@ $.extend({
         var vars = [], hash;
         var hashes = window.location.href.slice(
                 window.location.href.indexOf('?') + 1).split('&');
-        for ( var i = 0; i < hashes.length; i++) {
+        for (var i = 0; i < hashes.length; i++) {
             hash = hashes[i].split('=');
             vars.push(hash[0]);
             vars[hash[0]] = hash[1];
@@ -42,10 +42,7 @@ var toggleTurn = function(color) {
         console.log("got here!")
         whoseTurn = "black";
     }
-
     setTurnDisplay(whoseTurn);
-    //ctx.rotate(180);
-
 }
 
 var setTurnDisplay = function(color){
@@ -146,14 +143,12 @@ var lastMoveIndicator = function(){
         ctx.lineTo(end_x,end_y);
         ctx.lineTo(end_x-(square_size*.3),end_y+(square_size*moveDirection_y*.3));
         ctx.stroke();
-        
     } else {
         ctx.beginPath();
         ctx.moveTo(end_x,end_y+(square_size*moveDirection_y*.3));
         ctx.lineTo(end_x,end_y);
         ctx.lineTo(end_x+(square_size*moveDirection_x*.3),end_y);
         ctx.stroke();
-
     }
     console.log("indicated last move");
 }
@@ -169,19 +164,61 @@ $(document).ready(function() {
     } else {
         board = new Board(DEFAULT_BOARD_SIZE);
     }
-
     rules = new Rules(board);
-
     initializeBoard(board);
-    
-
 
     var refreshBoard = function(){
         ctx.clearRect(0,0,400,400);
         initializeBoard(board);
         refreshPeices(board);
-        //lastMoveIndicator();
     };
+
+
+    //this is the movement code
+    var isDragging = false;
+    var activeChecker;
+    var activeChecker_moves = [];
+    $("#checker_board").mousedown(function(e){
+        $(window).mousemove(function(){
+            isDragging = true;
+            var row = Math.floor(e.offsetY/square_size);
+            var col = Math.floor(e.offsetX/square_size);
+            activeChecker=board.getCheckerAt(row, col)
+            console.log(row+","+col);
+            
+            $(window).unbind("mousemove");
+        });
+    });
+    $("#checker_board").mouseup(function(e) {
+        var wasDragging = isDragging;
+        isDragging = false;
+        console.log(activeChecker);
+        $(window).unbind("mousemove");
+        if (activeChecker){
+            console.log("checker is not null");
+            var row = Math.floor(e.offsetY/square_size);
+            var col = Math.floor(e.offsetX/square_size);
+            
+            //var move = rules.ramificationsOfMove(activeChecker, directionOf(whoseTurn), directionOf(activeChecker.color), row, col);
+            //console.log("Move is as follows: "+move);
+           // if(move){
+                var result = rules.makeMove(activeChecker, directionOf(whoseTurn), directionOf(activeChecker.color), row, col);
+                if(result){
+                    markLastMove(result);
+                    toggleTurn();
+                    lastMoveIndicator();
+                }
+                //console.log("success!");
+            //}
+                
+        }; 
+        activeChecker = 0;
+        activeChecker_moves = [];
+    });
+
+
+
+
  	
 
     board.addEventListener('add',function (e) {
@@ -200,13 +237,9 @@ $(document).ready(function() {
     board.addEventListener('promote',function (e) {
 	},true);
 
-    //ctx.
-
     
     $("#btnNewGame").click(function(evt) {
-
         board.prepareNewGame();
-        //refreshBoard();
         setTurnDisplay(whoseTurn);
     });
 
