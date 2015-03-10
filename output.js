@@ -39,14 +39,16 @@ var toggleTurn = function(color) {
     if (whoseTurn == "black"){
         whoseTurn = "red";
     }else{
-        console.log("got here!")
         whoseTurn = "black";
     }
     setTurnDisplay(whoseTurn);
 }
 
-var setTurnDisplay = function(color){
 
+/**
+ *  Sets the text and style of the turn display based on whoseTurn.
+ */
+var setTurnDisplay = function(color){
     $("#turn_display").text(function(){
         return color.charAt(0).toUpperCase() + color.slice(1) + " Turn";
     });
@@ -58,20 +60,20 @@ var setTurnDisplay = function(color){
     $("#turn_display").css({"background-color": color, "color": textColor});
 }
 
-var initializeBoard = function(board) {
-            //Initialize the board
-    square_size = 400 / board.boardSize;    // declared in global scope
+
+/**
+ *  Declares the canvas context (ctx), the square size, and each checker in the 
+ *  global scope for future use. 
+ */
+var initializeBoard = function() {
+    square_size = 400 / board.boardSize;
     var c = document.getElementById("checker_board");
     ctx=c.getContext("2d");
     ctx.fillStyle="grey";
 
-    for(var row = 0; row < board.boardSize; row++){
-        for (var col = 0; col < board.boardSize; col++){
-            if((parseInt(row)+parseInt(col)) % 2 != 0){
-                ctx.fillRect(col * square_size, row * square_size, square_size, square_size);               
-            };
-        };
-    };
+    drawBoard(board);
+
+    //Preload images for future use
     red_checker = new Image();
     black_checker = new Image();
     red_king = new Image();
@@ -81,17 +83,35 @@ var initializeBoard = function(board) {
     red_king.src = 'graphics/red-king.png';
     black_king.src = 'graphics/black-king.png';
 
-
-
 };
 
-var refreshPeices = function(board){
-    var checkers = board.getAllCheckers();
+/**
+ * Draws the board onto the canvas 
+ */
+var drawBoard = function() {
+    //color every other square grey
+    for(var row = 0; row < board.boardSize; row++){
+        for (var col = 0; col < board.boardSize; col++){
+            if((parseInt(row)+parseInt(col)) % 2 != 0){
+                ctx.fillRect(col * square_size, row * square_size, square_size, square_size);               
+            };
+        };
+    };
+};
 
+
+/**
+ *  Adds each peice to the board
+ */
+var refreshPeices = function(){
+
+    var checkers = board.getAllCheckers();
     for (var i = 0; i < checkers.length; i++){
         var checker = checkers[i];
         var x = checker.col*square_size;
         var y = checker.row*square_size;
+
+        // draws images on their proper squares and scales them appropriately
         if(checker.isKing){
             if(checker.color == "red"){
                 ctx.drawImage(red_king, x, y, square_size, square_size);
@@ -106,13 +126,16 @@ var refreshPeices = function(board){
             };
         }
     };
-    console.log("did a board refresh");
 };
 
 
-
+/**
+ *  Declares the last move coordinates (from and to) in the global scope
+ *  Takes a rules.result object. 
+ */
 var markLastMove = function(result){
 
+    // returns the x or y coordinate of the center of a given square
     var toCenterDim = function(pos){
         return (pos*square_size)+(square_size/2);
     };
@@ -123,6 +146,12 @@ var markLastMove = function(result){
     end_y = toCenterDim(result.to_row);
 };
 
+
+/**
+ *  Draws a yellow arrow from the center of the square moved from to the center of
+ *  the square moved too. Takes the coordinates of the last move from the global scope.
+ *
+ */
 var lastMoveIndicator = function(){
 
     ctx.strokeStyle = "yellow";
@@ -150,7 +179,6 @@ var lastMoveIndicator = function(){
         ctx.lineTo(end_x+(square_size*moveDirection_x*.3),end_y);
         ctx.stroke();
     }
-    console.log("indicated last move");
 }
 
 
@@ -167,53 +195,50 @@ $(document).ready(function() {
     rules = new Rules(board);
     initializeBoard(board);
 
+
+    /**
+     * clears and redraws the board and peices
+     */
     var refreshBoard = function(){
         ctx.clearRect(0,0,400,400);
-        initializeBoard(board);
-        refreshPeices(board);
+        drawBoard();
+        refreshPeices();
     };
 
-
-    //this is the movement code
-    var isDragging = false;
+    // This is used by the listiner functions
     var activeChecker;
-    var activeChecker_moves = [];
+
+    /**
+     *  If the user mousedowns on a checker, set the activeChecker to that checker
+     */
     $("#checker_board").mousedown(function(e){
         $(window).mousemove(function(){
-            isDragging = true;
             var row = Math.floor(e.offsetY/square_size);
             var col = Math.floor(e.offsetX/square_size);
-            activeChecker=board.getCheckerAt(row, col)
-            console.log(row+","+col);
+            activeChecker=board.getCheckerAt(row, col);
             
             $(window).unbind("mousemove");
         });
     });
+
+    /**
+     * If the mouse releases on 
+     */
     $("#checker_board").mouseup(function(e) {
-        var wasDragging = isDragging;
-        isDragging = false;
-        console.log(activeChecker);
         $(window).unbind("mousemove");
         if (activeChecker){
-            console.log("checker is not null");
             var row = Math.floor(e.offsetY/square_size);
             var col = Math.floor(e.offsetX/square_size);
             
-            //var move = rules.ramificationsOfMove(activeChecker, directionOf(whoseTurn), directionOf(activeChecker.color), row, col);
-            //console.log("Move is as follows: "+move);
-           // if(move){
                 var result = rules.makeMove(activeChecker, directionOf(whoseTurn), directionOf(activeChecker.color), row, col);
                 if(result){
                     markLastMove(result);
                     toggleTurn();
                     lastMoveIndicator();
                 }
-                //console.log("success!");
-            //}
                 
         }; 
         activeChecker = 0;
-        activeChecker_moves = [];
     });
 
 
@@ -247,8 +272,7 @@ $(document).ready(function() {
       var playerColor = whoseTurn;
       var playerDirection = directionOf(playerColor);
       var result = rules.makeRandomMove(playerColor, playerDirection);
-      if (result != null) {
-        console.log("hit auto move")
+      if (result) {
         markLastMove(result);
         toggleTurn();
       }
