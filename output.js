@@ -62,27 +62,14 @@ var setTurnDisplay = function(color){
 
 
 /**
- *  Declares the canvas context (ctx), the square size, and each checker in the 
- *  global scope for future use. 
+ *  Declares the canvas context (ctx) and the square size global scope for future use. 
  */
 var initializeBoard = function() {
     square_size = 400 / board.boardSize;
     var c = document.getElementById("checker_board");
     ctx=c.getContext("2d");
     ctx.fillStyle="grey";
-
     drawBoard(board);
-
-    //Preload images for future use
-    red_checker = new Image();
-    black_checker = new Image();
-    red_king = new Image();
-    black_king = new Image();
-    red_checker.src = 'graphics/red-piece.png';
-    black_checker.src = 'graphics/black-piece.png';
-    red_king.src = 'graphics/red-king.png';
-    black_king.src = 'graphics/black-king.png';
-
 };
 
 /**
@@ -92,19 +79,50 @@ var drawBoard = function() {
     //color every other square grey
     for(var row = 0; row < board.boardSize; row++){
         for (var col = 0; col < board.boardSize; col++){
+            var x = col * square_size;
+            var y = row * square_size;
+            var unique_id = col+"_"+row;
             if((parseInt(row)+parseInt(col)) % 2 != 0){
-                ctx.fillRect(col * square_size, row * square_size, square_size, square_size);               
+                ctx.fillRect(x, y, square_size, square_size);               
             };
+            
+            $("#canvas_wrap").append("<div id='location"+unique_id+"'></div>");
+            $("#location"+unique_id).css({"top": y+"px", "left": x+"px", "width": square_size+"px", "height": square_size+"px"});
         };
     };
+
 };
+
+
+
 
 
 /**
  *  Adds each peice to the board
  */
-var refreshPeices = function(){
 
+var addPeice = function(checker){
+    var color = checker.color;
+    var x = checker.col*square_size;
+    var y = checker.row*square_size;
+    var unique_id = checker.col+"_"+checker.row;
+    $("#location"+unique_id).append("<img src='graphics/"+color+"-piece.png'>");  
+};
+
+var removePeice = function(col, row){
+    var unique_id = col+"_"+row;
+    $("#location"+unique_id).empty();
+};
+
+var movePeice = function(details){
+    removePeice(details.fromCol, details.fromRow);
+    addPeice(details.checker);
+}
+
+
+/*
+
+var refreshPeices = function(){
     var checkers = board.getAllCheckers();
     for (var i = 0; i < checkers.length; i++){
         var checker = checkers[i];
@@ -124,10 +142,10 @@ var refreshPeices = function(){
             } else {
                 ctx.drawImage(black_checker, x, y, square_size, square_size);
             };
-        }
+        };
     };
 };
-
+    */
 
 /**
  *  Declares the last move coordinates (from and to) in the global scope
@@ -211,7 +229,7 @@ $(document).ready(function() {
     /**
      *  If the user mousedowns on a checker, set the activeChecker to that checker
      */
-    $("#checker_board").mousedown(function(e){
+    $("#checker_board div").mousedown(function(e){
         $(window).mousemove(function(){
             var row = Math.floor(e.offsetY/square_size);
             var col = Math.floor(e.offsetX/square_size);
@@ -224,7 +242,7 @@ $(document).ready(function() {
     /**
      * If the mouse releases on 
      */
-    $("#checker_board").mouseup(function(e) {
+    $("#checker_board div").mouseup(function(e) {
         $(window).unbind("mousemove");
         if (activeChecker){
             var row = Math.floor(e.offsetY/square_size);
@@ -247,16 +265,17 @@ $(document).ready(function() {
  	
 
     board.addEventListener('add',function (e) {
-        refreshBoard();
+        addPeice(e.details.checker);
+        //console.log(e);
 	},true);
 
 	board.addEventListener('move',function (e) {
-        refreshBoard();
+        movePeice(e.details);
 
 	},true);
 
     board.addEventListener('remove', function(e) {
-        refreshBoard();
+        removePeice(e.details.checker.col, e.details.checker.row);
     }, true);
 
     board.addEventListener('promote',function (e) {
@@ -264,8 +283,9 @@ $(document).ready(function() {
 
     
     $("#btnNewGame").click(function(evt) {
-        board.prepareNewGame();
         setTurnDisplay(whoseTurn);
+        $("img").css("visibility","visible");
+        $("img").css({"width": square_size, "height": square_size});
     });
 
     $("#btnAutoMove").click(function(evt) {
@@ -280,5 +300,6 @@ $(document).ready(function() {
     });
 
     board.prepareNewGame();
+    $("img").css("visibility","hidden");
 
 });

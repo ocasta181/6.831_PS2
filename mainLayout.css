@@ -15,11 +15,42 @@
 	padding: 0px 0px;
 }
 
-#checker_board{
+#turn_display {
+	text-align: center;
+}
+
+#canvas_wrap { 
+	position: relative;
+	width: 400px;
+	height: 400px;
+}
+
+#canvas_wrap canvas {
+	position: absolute;
+	top: 0px;
+	left: 0px;
+	z-index: 0;
 	border: 1px solid grey;
 	background-color: white;
 }
 
-#turn_display {
-	text-align: center;
+#checker_board {
+	z-index: 0;
+	border: 1px solid grey;
+	background-color: white;
+}
+
+#feedback_overlay {
+	z-index: 100;
+	background-color: rgba(255,255,255,0); !
+}
+
+#canvas_wrap div {
+	position: absolute; 
+	z-index: 1;
+
+}
+
+#canvas_wrap div img {
+	visibility: visible;
 }
