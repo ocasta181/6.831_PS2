@@ -25,6 +25,7 @@ var DEFAULT_BOARD_SIZE = 8;
 var board;
 var rules;
 var whoseTurn = "black";	
+var gameOn = false;
 
 var directionOf = function(color) {
   if (color == "black") {
@@ -42,6 +43,7 @@ var toggleTurn = function(color) {
         whoseTurn = "black";
     }
     setTurnDisplay(whoseTurn);
+
 }
 
 
@@ -70,6 +72,9 @@ var initializeBoard = function() {
     ctx=c.getContext("2d");
     ctx.fillStyle="grey";
     drawBoard(board);
+
+    var c = document.getElementById("indicator");
+    i_ctx=c.getContext("2d");
 };
 
 /**
@@ -86,8 +91,10 @@ var drawBoard = function() {
                 ctx.fillRect(x, y, square_size, square_size);               
             };
             
+            // adds a div for each square and sets the location for each div
             $("#canvas_wrap").append("<div id='location"+unique_id+"'></div>");
-            $("#location"+unique_id).css({"top": y+"px", "left": x+"px", "width": square_size+"px", "height": square_size+"px"});
+            $("#location"+unique_id).css({"top": y+"px", "left": x+"px", 
+                        "width": square_size+"px", "height": square_size+"px"});
         };
     };
 
@@ -98,57 +105,37 @@ var drawBoard = function() {
 
 
 /**
- *  Adds each peice to the board
+ *  Adds a Piece to the board
  */
-
-var addPeice = function(checker){
+var addPiece = function(checker){
     var color = checker.color;
     var x = checker.col*square_size;
     var y = checker.row*square_size;
     var unique_id = checker.col+"_"+checker.row;
-    $("#location"+unique_id).append("<img src='graphics/"+color+"-piece.png'>");  
+    var type;
+    checker.isKing ? type = "king" : type = "piece";
+    $("#location"+unique_id).append("<img src='graphics/"+color+"-"+type+".png'>");
 };
 
-var removePeice = function(col, row){
+/**
+ *  Removes a Piece from the board
+ */
+var removePiece = function(col, row){
     var unique_id = col+"_"+row;
     $("#location"+unique_id).empty();
 };
 
-var movePeice = function(details){
-    removePeice(details.fromCol, details.fromRow);
-    addPeice(details.checker);
+/**
+ *  Moves a piece from one square to another on the board
+ */
+var movePiece = function(details){
+    removePiece(details.fromCol, details.fromRow);
+    addPiece(details.checker);
 }
 
 
-/*
-
-var refreshPeices = function(){
-    var checkers = board.getAllCheckers();
-    for (var i = 0; i < checkers.length; i++){
-        var checker = checkers[i];
-        var x = checker.col*square_size;
-        var y = checker.row*square_size;
-
-        // draws images on their proper squares and scales them appropriately
-        if(checker.isKing){
-            if(checker.color == "red"){
-                ctx.drawImage(red_king, x, y, square_size, square_size);
-            } else {
-                ctx.drawImage(black_king, x, y, square_size, square_size);
-            };
-        } else {
-            if(checker.color == "red"){
-                ctx.drawImage(red_checker, x, y, square_size, square_size);
-            } else {
-                ctx.drawImage(black_checker, x, y, square_size, square_size);
-            };
-        };
-    };
-};
-    */
-
 /**
- *  Declares the last move coordinates (from and to) in the global scope
+ *  Returns the last move coordinates
  *  Takes a rules.result object. 
  */
 var markLastMove = function(result){
@@ -157,45 +144,46 @@ var markLastMove = function(result){
     var toCenterDim = function(pos){
         return (pos*square_size)+(square_size/2);
     };
+    
 
-    start_x = toCenterDim(result.from_col);
-    start_y = toCenterDim(result.from_row);
-    end_x = toCenterDim(result.to_col);
-    end_y = toCenterDim(result.to_row);
+    return {"start_x": toCenterDim(result.from_col), "start_y": toCenterDim(result.from_row), 
+            "end_x": toCenterDim(result.to_col), "end_y": toCenterDim(result.to_row)};
 };
 
 
 /**
  *  Draws a yellow arrow from the center of the square moved from to the center of
- *  the square moved too. Takes the coordinates of the last move from the global scope.
+ *  the square moved too. Takes the coordinates of the last passed in.
  *
  */
-var lastMoveIndicator = function(){
+var lastMoveIndicator = function(last){
 
-    ctx.strokeStyle = "yellow";
-    ctx.lineWidth = square_size*.1;
-    ctx.beginPath();
-    ctx.moveTo(start_x, start_y);
-    ctx.lineTo(end_x,end_y);
-    ctx.stroke();
+    i_ctx.clearRect(0,0,400,400);
 
-    var moveScalar_x = start_x - end_x;
-    var moveScalar_y = start_y - end_y;
+    i_ctx.strokeStyle = "yellow";
+    i_ctx.lineWidth = square_size*.1;
+    i_ctx.beginPath();
+    i_ctx.moveTo(last.start_x, last.start_y);
+    i_ctx.lineTo(last.end_x,last.end_y);
+    i_ctx.stroke();
+
+    var moveScalar_x = last.start_x - last.end_x;
+    var moveScalar_y = last.start_y - last.end_y;
     var moveDirection_x = moveScalar_x?moveScalar_x<0?-1:1:0;
     var moveDirection_y = moveScalar_y?moveScalar_y<0?-1:1:0;
 
-    if(start_x == end_x){
-        ctx.beginPath();
-        ctx.moveTo(end_x+(square_size*.3),end_y+(square_size*moveDirection_y*.3));
-        ctx.lineTo(end_x,end_y);
-        ctx.lineTo(end_x-(square_size*.3),end_y+(square_size*moveDirection_y*.3));
-        ctx.stroke();
+    if(last.start_x == last.end_x){
+        i_ctx.beginPath();
+        i_ctx.moveTo(last.end_x+(square_size*.3),last.end_y+(square_size*moveDirection_y*.3));
+        i_ctx.lineTo(last.end_x,last.end_y);
+        i_ctx.lineTo(last.end_x-(square_size*.3),last.end_y+(square_size*moveDirection_y*.3));
+        i_ctx.stroke();
     } else {
-        ctx.beginPath();
-        ctx.moveTo(end_x,end_y+(square_size*moveDirection_y*.3));
-        ctx.lineTo(end_x,end_y);
-        ctx.lineTo(end_x+(square_size*moveDirection_x*.3),end_y);
-        ctx.stroke();
+        i_ctx.beginPath();
+        i_ctx.moveTo(last.end_x,last.end_y+(square_size*moveDirection_y*.3));
+        i_ctx.lineTo(last.end_x,last.end_y);
+        i_ctx.lineTo(last.end_x+(square_size*moveDirection_x*.3),last.end_y);
+        i_ctx.stroke();
     }
 }
 
@@ -214,23 +202,15 @@ $(document).ready(function() {
     initializeBoard(board);
 
 
-    /**
-     * clears and redraws the board and peices
-     */
-    var refreshBoard = function(){
-        ctx.clearRect(0,0,400,400);
-        drawBoard();
-        refreshPeices();
-    };
-
     // This is used by the listiner functions
     var activeChecker;
 
     /**
      *  If the user mousedowns on a checker, set the activeChecker to that checker
      */
-    $("#checker_board div").mousedown(function(e){
+    $("#indicator").mousedown(function(e){
         $(window).mousemove(function(){
+            console.log("horray!");
             var row = Math.floor(e.offsetY/square_size);
             var col = Math.floor(e.offsetX/square_size);
             activeChecker=board.getCheckerAt(row, col);
@@ -242,7 +222,7 @@ $(document).ready(function() {
     /**
      * If the mouse releases on 
      */
-    $("#checker_board div").mouseup(function(e) {
+    $("#indicator").mouseup(function(e) {
         $(window).unbind("mousemove");
         if (activeChecker){
             var row = Math.floor(e.offsetY/square_size);
@@ -250,53 +230,52 @@ $(document).ready(function() {
             
                 var result = rules.makeMove(activeChecker, directionOf(whoseTurn), directionOf(activeChecker.color), row, col);
                 if(result){
-                    markLastMove(result);
+                    var lastMove = markLastMove(result);
                     toggleTurn();
-                    lastMoveIndicator();
+                    lastMoveIndicator(lastMove);
                 }
                 
         }; 
         activeChecker = 0;
     });
 
-
-
-
- 	
-
     board.addEventListener('add',function (e) {
-        addPeice(e.details.checker);
-        //console.log(e);
+        addPiece(e.details.checker);
 	},true);
 
 	board.addEventListener('move',function (e) {
-        movePeice(e.details);
+        movePiece(e.details);
 
 	},true);
 
-    board.addEventListener('remove', function(e) {
-        removePeice(e.details.checker.col, e.details.checker.row);
+    board.addEventListener('remove',function (e) {
+        removePiece(e.details.checker.col, e.details.checker.row);
     }, true);
 
     board.addEventListener('promote',function (e) {
+        movePiece(e.details);
 	},true);
 
     
     $("#btnNewGame").click(function(evt) {
+        gameOn = true;
+        board.prepareNewGame();
         setTurnDisplay(whoseTurn);
-        $("img").css("visibility","visible");
-        $("img").css({"width": square_size, "height": square_size});
+        $("img").css({"width": square_size, "height": square_size, "visibility": "visible"});
+        i_ctx.clearRect(0,0,400,400);
     });
 
     $("#btnAutoMove").click(function(evt) {
-      var playerColor = whoseTurn;
-      var playerDirection = directionOf(playerColor);
-      var result = rules.makeRandomMove(playerColor, playerDirection);
-      if (result) {
-        markLastMove(result);
-        toggleTurn();
-      }
-        lastMoveIndicator();
+        if(gameOn){
+            var playerColor = whoseTurn;
+            var playerDirection = directionOf(playerColor);
+            var result = rules.makeRandomMove(playerColor, playerDirection);
+            if (result) {
+                var lastMove = markLastMove(result);
+                toggleTurn();
+                lastMoveIndicator(lastMove);
+            };
+        };
     });
 
     board.prepareNewGame();
