@@ -115,6 +115,7 @@ var addPiece = function(checker){
     var type;
     checker.isKing ? type = "king" : type = "piece";
     $("#location"+unique_id).append("<img src='graphics/"+color+"-"+type+".png'>");
+    $("img").css({"width": square_size, "height": square_size});
 };
 
 /**
@@ -261,7 +262,7 @@ $(document).ready(function() {
         gameOn = true;
         board.prepareNewGame();
         setTurnDisplay(whoseTurn);
-        $("img").css({"width": square_size, "height": square_size, "visibility": "visible"});
+        $("img").css("visibility", "visible");
         i_ctx.clearRect(0,0,400,400);
     });
 
