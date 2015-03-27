@@ -19,6 +19,9 @@ $.extend({
     }
 });
 
+var moveHistory;
+var historyPointer;
+
 var DEFAULT_BOARD_SIZE = 8;
 
 //data model
@@ -36,7 +39,7 @@ var directionOf = function(color) {
 
 // Fill in this function to toggle the display for whose turn
 // The color parameter should be either "black" or "red"
-var toggleTurn = function(color) {
+var toggleTurn = function() {
     if (whoseTurn == "black"){
         whoseTurn = "red";
     }else{
@@ -139,16 +142,15 @@ var movePiece = function(details){
  *  Returns the last move coordinates
  *  Takes a rules.result object. 
  */
-var markLastMove = function(result){
+var markLastMove = function(details){
 
     // returns the x or y coordinate of the center of a given square
     var toCenterDim = function(pos){
         return (pos*square_size)+(square_size/2);
     };
     
-
-    return {"start_x": toCenterDim(result.from_col), "start_y": toCenterDim(result.from_row), 
-            "end_x": toCenterDim(result.to_col), "end_y": toCenterDim(result.to_row)};
+    return {"start_x": toCenterDim(details.fromCol), "start_y": toCenterDim(details.fromRow), 
+            "end_x": toCenterDim(details.toCol), "end_y": toCenterDim(details.toRow)};
 };
 
 
@@ -186,7 +188,33 @@ var lastMoveIndicator = function(last){
         i_ctx.lineTo(last.end_x+(square_size*moveDirection_x*.3),last.end_y);
         i_ctx.stroke();
     }
-}
+};
+
+var checkButtons = function(){
+    if(historyPointer > 0) {
+        $("#btnUndo").attr('disabled', false);
+    } else {
+        $("#btnUndo").attr('disabled', true);
+    };
+    if(moveHistory.length > historyPointer) {
+        $("#btnRedo").attr('disabled', false);
+    } else {
+        $("#btnRedo").attr('disabled', true);
+    };
+};
+
+var makeMove = function(result){
+    if (moveHistory.length > historyPointer){
+        moveHistory = moveHistory.slice(0, historyPointer);
+    };
+    moveHistory.push(result);
+    historyPointer++;
+    checkButtons(); 
+};
+
+
+
+
 
 
 
@@ -203,41 +231,68 @@ $(document).ready(function() {
     initializeBoard(board);
 
 
-    // This is used by the listiner functions
+    // These are used by the listiner functions
     var activeChecker;
+    var active_id;
+    var isDragging;
+    var active_row;
+    var active_col;
+
+
 
     /**
      *  If the user mousedowns on a checker, set the activeChecker to that checker
      */
     $("#indicator").mousedown(function(e){
-        $(window).mousemove(function(){
-            console.log("horray!");
-            var row = Math.floor(e.offsetY/square_size);
-            var col = Math.floor(e.offsetX/square_size);
-            activeChecker=board.getCheckerAt(row, col);
-            
-            $(window).unbind("mousemove");
-        });
+
+        e.preventDefault();
+        var row = Math.floor(e.offsetY/square_size);
+        var col = Math.floor(e.offsetX/square_size);
+        activeChecker=board.getCheckerAt(row, col);
+        if(activeChecker.color != whoseTurn) { activeChecker = 0};
+        if(activeChecker){
+            isDragging = true;
+            active_id = activeChecker.col+"_"+activeChecker.row;
+            $("#location"+active_id).css("z-index", "100");
+        };
+    });
+
+    $(document).mousemove(function(e){
+        e.preventDefault();
+        if (isDragging){
+
+            var parentOffset = $("#indicator").offset();
+            //or $(this).offset(); if you really just want the current element's offset
+            var x = e.pageX - parentOffset.left;
+            var y = e.pageY - parentOffset.top;
+            var x_centered = x-square_size/2;
+            var y_centered = y-square_size/2;
+            $("#location"+active_id).css({"top": y_centered+"px", "left": x_centered+"px"});
+
+            active_row = Math.floor(y/square_size);
+            active_col = Math.floor(x/square_size);
+        };
     });
 
     /**
      * If the mouse releases on 
      */
-    $("#indicator").mouseup(function(e) {
-        $(window).unbind("mousemove");
-        if (activeChecker){
-            var row = Math.floor(e.offsetY/square_size);
-            var col = Math.floor(e.offsetX/square_size);
-            
-                var result = rules.makeMove(activeChecker, directionOf(whoseTurn), directionOf(activeChecker.color), row, col);
-                if(result){
-                    var lastMove = markLastMove(result);
-                    toggleTurn();
-                    lastMoveIndicator(lastMove);
-                }
-                
+    $(document).mouseup(function(e) {
+        $("#indicator").unbind(document);
+        if (isDragging){
+            var x = activeChecker.col*square_size;
+            var y = activeChecker.row*square_size;
+            $("#location"+active_id).css({"top": y+"px", "left": x+"px", "z-index":1});
+        
+            var result = rules.makeMove(activeChecker, directionOf(whoseTurn), 
+                                        directionOf(activeChecker.color), 
+                                        active_row, active_col);
+            if(result){
+                makeMove(result);
+            }; 
         }; 
         activeChecker = 0;
+        isDragging = false;
     });
 
     board.addEventListener('add',function (e) {
@@ -247,6 +302,13 @@ $(document).ready(function() {
 	board.addEventListener('move',function (e) {
         movePiece(e.details);
 
+        var lastMove = markLastMove(e.details);
+        lastMoveIndicator(lastMove);
+        checkButtons(); 
+        toggleTurn();
+        console.log("Move history: ",moveHistory,"... ");
+        console.log("...with length",moveHistory.length);
+        console.log("pointer at: ",historyPointer);
 	},true);
 
     board.addEventListener('remove',function (e) {
@@ -255,6 +317,7 @@ $(document).ready(function() {
 
     board.addEventListener('promote',function (e) {
         movePiece(e.details);
+        console.log(e.details);
 	},true);
 
     
@@ -264,6 +327,13 @@ $(document).ready(function() {
         setTurnDisplay(whoseTurn);
         $("img").css("visibility", "visible");
         i_ctx.clearRect(0,0,400,400);
+        $("#btnAutoMove").attr('disabled', false);
+        if(whoseTurn == "red"){
+            toggleTurn();
+        };
+        moveHistory = [];
+        historyPointer = 0;
+        checkButtons();
     });
 
     $("#btnAutoMove").click(function(evt) {
@@ -272,11 +342,46 @@ $(document).ready(function() {
             var playerDirection = directionOf(playerColor);
             var result = rules.makeRandomMove(playerColor, playerDirection);
             if (result) {
-                var lastMove = markLastMove(result);
-                toggleTurn();
-                lastMoveIndicator(lastMove);
+                makeMove(result);
             };
+            checkButtons();
         };
+    });
+
+    $("#btnUndo").click(function(evt) {
+        historyPointer--;
+        var lastMove = moveHistory[historyPointer];
+        var checker = board.getCheckerAt(lastMove.to_row,lastMove.to_col);
+        if(lastMove.made_king){
+            board.demote(checker);
+        };
+        board.moveTo(checker, lastMove.from_row, lastMove.from_col);
+
+        if(lastMove.remove.length > 0){
+            lastMove.remove.forEach(function(removed){
+                board.add(removed, removed.row, removed.col);
+            });
+        };
+        checkButtons();
+    });
+    
+    $("#btnRedo").click(function(evt) {
+        console.log("Inside redo: ")
+        console.log("Move History length: ",moveHistory.length);
+        console.log("History pointer index: ",historyPointer);
+        console.log(moveHistory);
+        lastMove = moveHistory[historyPointer];
+        console.log(lastMove);
+        checker = board.getCheckerAt(lastMove.from_row,lastMove.from_col);
+        
+        console.log(checker);
+        rules.makeMove(checker, directionOf(whoseTurn), 
+                                        directionOf(checker.color), 
+                                        lastMove.to_row, lastMove.to_col);
+
+        console.log("...ending redo!"); 
+        historyPointer++;
+                checkButtons();
     });
 
     board.prepareNewGame();

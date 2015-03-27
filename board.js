@@ -229,6 +229,11 @@ var Board = function(size) {
 		checker.isKing = true;
 		this.dispatchBoardEvent("promote", {checker:checker});
 	}
+
+  this.demote = function(checker) {
+    checker.isKing = false;
+    this.dispatchBoardEvent("promote", {checker:checker});
+  }
 	
 
     ////////////////////////////////////////////////
