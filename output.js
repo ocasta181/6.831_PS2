@@ -19,8 +19,8 @@ $.extend({
     }
 });
 
-var moveHistory;
-var historyPointer;
+
+
 
 var DEFAULT_BOARD_SIZE = 8;
 
@@ -29,6 +29,10 @@ var board;
 var rules;
 var whoseTurn = "black";	
 var gameOn = false;
+
+// used to track undo and redo
+var moveHistory;
+var historyPointer;
 
 var directionOf = function(color) {
   if (color == "black") {
@@ -190,6 +194,9 @@ var lastMoveIndicator = function(last){
     }
 };
 
+/**
+ * Checks if undo and redo buttons should be active
+ */
 var checkButtons = function(){
     if(historyPointer > 0) {
         $("#btnUndo").attr('disabled', false);
@@ -203,7 +210,10 @@ var checkButtons = function(){
     };
 };
 
-var makeMove = function(result){
+/*
+ * update the state of undo and redo after a new move
+ */
+var updateUndo = function(result){
     if (moveHistory.length > historyPointer){
         moveHistory = moveHistory.slice(0, historyPointer);
     };
@@ -257,6 +267,9 @@ $(document).ready(function() {
         };
     });
 
+    /**
+     * If the user drags a checker, have the checker image follow the mouse.
+     */
     $(document).mousemove(function(e){
         e.preventDefault();
         if (isDragging){
@@ -275,7 +288,7 @@ $(document).ready(function() {
     });
 
     /**
-     * If the mouse releases on 
+     * If the mouse releases a checker on a valid location, move the checker to that location.
      */
     $(document).mouseup(function(e) {
         $("#indicator").unbind(document);
@@ -288,9 +301,9 @@ $(document).ready(function() {
                                         directionOf(activeChecker.color), 
                                         active_row, active_col);
             if(result){
-                makeMove(result);
+                updateUndo(result);
             }; 
-        }; 
+        };
         activeChecker = 0;
         isDragging = false;
     });
@@ -306,9 +319,6 @@ $(document).ready(function() {
         lastMoveIndicator(lastMove);
         checkButtons(); 
         toggleTurn();
-        console.log("Move history: ",moveHistory,"... ");
-        console.log("...with length",moveHistory.length);
-        console.log("pointer at: ",historyPointer);
 	},true);
 
     board.addEventListener('remove',function (e) {
@@ -317,7 +327,6 @@ $(document).ready(function() {
 
     board.addEventListener('promote',function (e) {
         movePiece(e.details);
-        console.log(e.details);
 	},true);
 
     
@@ -342,46 +351,50 @@ $(document).ready(function() {
             var playerDirection = directionOf(playerColor);
             var result = rules.makeRandomMove(playerColor, playerDirection);
             if (result) {
-                makeMove(result);
+                updateUndo(result);
             };
             checkButtons();
         };
     });
 
+    /** 
+     * Undo the most recently executed move. 
+     * This can be done until the board is set to default positions
+     */
     $("#btnUndo").click(function(evt) {
         historyPointer--;
         var lastMove = moveHistory[historyPointer];
         var checker = board.getCheckerAt(lastMove.to_row,lastMove.to_col);
+
+        // demotes recently made kings back to regular peices
         if(lastMove.made_king){
             board.demote(checker);
         };
+
         board.moveTo(checker, lastMove.from_row, lastMove.from_col);
 
+        // adds removed peices back to the board
         if(lastMove.remove.length > 0){
             lastMove.remove.forEach(function(removed){
                 board.add(removed, removed.row, removed.col);
             });
         };
+
         checkButtons();
     });
     
+    /**
+     * Redo the most recently undone move. 
+     * This can be done until the most recently executed move. 
+     */
     $("#btnRedo").click(function(evt) {
-        console.log("Inside redo: ")
-        console.log("Move History length: ",moveHistory.length);
-        console.log("History pointer index: ",historyPointer);
-        console.log(moveHistory);
         lastMove = moveHistory[historyPointer];
-        console.log(lastMove);
         checker = board.getCheckerAt(lastMove.from_row,lastMove.from_col);
-        
-        console.log(checker);
         rules.makeMove(checker, directionOf(whoseTurn), 
                                         directionOf(checker.color), 
                                         lastMove.to_row, lastMove.to_col);
-
-        console.log("...ending redo!"); 
         historyPointer++;
-                checkButtons();
+        checkButtons();
     });
 
     board.prepareNewGame();
